@@ -1,0 +1,9 @@
+streamlit
+groq
+sentence-transformers
+faiss-cpu
+numpy
+yt-dlp
+requests
+imageio-ffmpeg
+youtube-transcript-api
