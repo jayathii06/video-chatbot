@@ -13,9 +13,56 @@ import tempfile
 os.environ["PATH"] += os.pathsep + os.path.dirname(imageio_ffmpeg.get_ffmpeg_exe())
 
 st.set_page_config(page_title="Video RAG App", page_icon="🎥")
-st.title("🎥 Chat with Any YouTube Video")
-st.write("Paste a YouTube link and ask anything about the video!")
+# Load CSS
+def load_css():
+    with open("style.css") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+load_css()
+
+st.markdown("""
+<div style='text-align:center; padding:1.5rem 0 0.5rem 0;'>
+    <div style='display:inline-block; background:rgba(56,189,248,0.1); 
+    border:1px solid rgba(56,189,248,0.25); border-radius:999px; 
+    padding:3px 14px; margin-bottom:10px;'>
+        <span style='color:#38bdf8; font-size:11px; font-weight:500;'>
+        ● AI Video Intelligence</span>
+    </div>
+    <h1 style='font-family:Inter,sans-serif; font-size:2.8rem; font-weight:700;
+    color:white; margin:0; line-height:1.1;'>🎬 VideoMind</h1>
+    <p style='color:rgba(255,255,255,0.35); font-size:1rem; margin-top:0.5rem;'>
+    Ask questions about any YouTube video instantly</p>
+</div>
+<div style='display:flex; gap:10px; margin:1.2rem 0;'>
+    <div style='flex:1; background:rgba(56,189,248,0.06); 
+    border:1px solid rgba(56,189,248,0.15); border-radius:12px; 
+    padding:1rem; text-align:center;'>
+        <div style='font-size:1.3rem;'>⚡</div>
+        <div style='color:white; font-size:0.85rem; font-weight:500; margin-top:4px;'>
+        Lightning fast</div>
+        <div style='color:rgba(255,255,255,0.35); font-size:0.75rem; margin-top:2px;'>
+        Subtitles in seconds</div>
+    </div>
+    <div style='flex:1; background:rgba(56,189,248,0.06); 
+    border:1px solid rgba(56,189,248,0.15); border-radius:12px; 
+    padding:1rem; text-align:center;'>
+        <div style='font-size:1.3rem;'>🎯</div>
+        <div style='color:white; font-size:0.85rem; font-weight:500; margin-top:4px;'>
+        Accurate answers</div>
+        <div style='color:rgba(255,255,255,0.35); font-size:0.75rem; margin-top:2px;'>
+        Vector search</div>
+    </div>
+    <div style='flex:1; background:rgba(56,189,248,0.06); 
+    border:1px solid rgba(56,189,248,0.15); border-radius:12px; 
+    padding:1rem; text-align:center;'>
+        <div style='font-size:1.3rem;'>💬</div>
+        <div style='color:white; font-size:0.85rem; font-weight:500; margin-top:4px;'>
+        Natural chat</div>
+        <div style='color:rgba(255,255,255,0.35); font-size:0.75rem; margin-top:2px;'>
+        Conversational follow-ups</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 @st.cache_resource
 def load_embedder():
     return SentenceTransformer("all-MiniLM-L6-v2")
@@ -147,7 +194,6 @@ def retrieve(query, index, chunks, k=8):
     return "\n---\n".join(chunks[i] for i in I[0])
 
 # ── Sidebar ────────────────────────────────────────────
-st.sidebar.title("⚙️ Settings")
 api_key = st.secrets.get("GROQ_API_KEY", "")
 st.sidebar.markdown("---")
 st.sidebar.markdown("**How it works:**")
