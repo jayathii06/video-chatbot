@@ -1,6 +1,7 @@
 import streamlit as st
 from groq import Groq
 from sentence_transformers import SentenceTransformer
+from youtube_transcript_api import YouTubeTranscriptApi
 import faiss
 import numpy as np
 import os
@@ -8,7 +9,6 @@ import imageio_ffmpeg
 import re
 import yt_dlp
 import tempfile
-import time
 
 os.environ["PATH"] += os.pathsep + os.path.dirname(imageio_ffmpeg.get_ffmpeg_exe())
 
@@ -57,54 +57,6 @@ def extract_video_id(url):
             return m.group(1)
     return None
 
-def parse_vtt(vtt_text):
-    lines = vtt_text.splitlines()
-    text_lines = []
-    for line in lines:
-        line = line.strip()
-        if not line or line.startswith("WEBVTT") or line.startswith("NOTE") or "-->" in line or line.isdigit():
-            continue
-        line = re.sub(r"<[^>]+>", "", line)
-        if line:
-            text_lines.append(line)
-    deduped = []
-    for line in text_lines:
-        if not deduped or line != deduped[-1]:
-            deduped.append(line)
-    return " ".join(deduped)
-
-def run_yt_dlp(url, ydl_opts):
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        return ydl.extract_info(url, download=False) if ydl_opts.get("skip_download") else ydl.download([url])
-
-def pick_caption_url(info):
-    captions = info.get("subtitles", {}) or {}
-    auto_caps = info.get("automatic_captions", {}) or {}
-
-    for lang_group in [captions, auto_caps]:
-        for lang in ["en", "en-US", "en-GB", "hi", "te", "ta", "kn", "ml"]:
-            tracks = lang_group.get(lang)
-            if tracks:
-                for track in tracks:
-                    if track.get("ext") == "vtt" and track.get("url"):
-                        return track["url"]
-                for track in tracks:
-                    if track.get("url"):
-                        return track["url"]
-
-    for lang_group in [captions, auto_caps]:
-        for tracks in lang_group.values():
-            for track in tracks:
-                if track.get("url"):
-                    return track["url"]
-    return None
-
-def download_caption_text(caption_url):
-    import requests
-    r = requests.get(caption_url, timeout=20)
-    r.raise_for_status()
-    return parse_vtt(r.text)
-
 def transcribe_audio_with_groq(video_url):
     with tempfile.TemporaryDirectory() as tmpdir:
         audio_path = os.path.join(tmpdir, "audio")
@@ -114,8 +66,6 @@ def transcribe_audio_with_groq(video_url):
             "quiet": True,
             "noplaylist": True,
             "retries": 3,
-            "fragment_retries": 3,
-            "extractor_retries": 3,
             "ffmpeg_location": imageio_ffmpeg.get_ffmpeg_exe(),
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
@@ -123,7 +73,6 @@ def transcribe_audio_with_groq(video_url):
                 "preferredquality": "64",
             }],
         }
-
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([video_url])
 
@@ -149,41 +98,30 @@ def get_transcript(video_url, video_id):
     if cache_key in st.session_state:
         return st.session_state[cache_key]
 
-    info = None
+    # Method 1 — youtube-transcript-api
     try:
-        info = run_yt_dlp(video_url, {
-            "skip_download": True,
-            "quiet": True,
-            "noplaylist": True,
-            "retries": 2,
-            "extractor_retries": 2,
-            "socket_timeout": 20,
-        })
-    except Exception:
-        info = None
-
-    if info:
-        caption_url = pick_caption_url(info)
-        if caption_url:
-            try:
-                transcript = download_caption_text(caption_url)
-                if transcript.strip():
-                    st.session_state[cache_key] = transcript
-                    return transcript
-            except Exception as e:
-                st.info(f"Caption fetch failed, trying fallback transcription. {e}")
-
-    if client is None:
-        return None
-
-    try:
-        st.info("🎙️ No usable captions found. Trying audio transcription...")
-        transcript = transcribe_audio_with_groq(video_url)
-        if transcript and transcript.strip():
-            st.session_state[cache_key] = transcript
-            return transcript
+        ytt = YouTubeTranscriptApi()
+        transcript_list = ytt.list(video_id)
+        transcript = transcript_list.find_transcript(
+            ['en', 'en-US', 'en-GB', 'hi', 'te', 'ta', 'kn', 'ml']
+        ).fetch()
+        text = " ".join(entry.text for entry in transcript)
+        if text.strip():
+            st.session_state[cache_key] = text
+            return text
     except Exception as e:
-        st.error(f"Transcription failed: {e}")
+        st.info(f"⚡ Caption error: {e}")
+
+    # Method 2 — Groq Whisper fallback
+    if client:
+        try:
+            st.info("🎙️ Transcribing with Groq Whisper...")
+            transcript = transcribe_audio_with_groq(video_url)
+            if transcript and transcript.strip():
+                st.session_state[cache_key] = transcript
+                return transcript
+        except Exception as e:
+            st.error(f"❌ Transcription failed: {e}")
 
     return None
 
@@ -192,7 +130,6 @@ def chunk_text(text, chunk_size=120, overlap=25):
     sentences = [s.strip() for s in sentences if s.strip()]
     if not sentences:
         return []
-
     chunks = []
     start = 0
     step = max(1, chunk_size - overlap)
@@ -221,14 +158,54 @@ def retrieve(query, index, chunks, k=5):
             retrieved.append(chunks[i])
     return "\n---\n".join(retrieved)
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("**How it works:**")
-st.sidebar.markdown("1. Paste a YouTube URL")
-st.sidebar.markdown("2. Fetch captions or transcribe audio")
-st.sidebar.markdown("3. Ask questions about the video")
-st.sidebar.markdown("---")
-st.sidebar.markdown("Powered by FAISS + Groq")
+# ── Sidebar ────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("""
+    <div style='padding:0.5rem 0;'>
+        <h3 style='color:white; font-weight:600;'>⚙️ Settings</h3>
+        <hr style='border-color:rgba(56,189,248,0.2); margin:12px 0;'>
+        <p style='color:rgba(255,255,255,0.35); font-size:0.7rem;
+        text-transform:uppercase; letter-spacing:0.1em; font-weight:600;
+        margin-bottom:12px;'>HOW IT WORKS</p>
+        <div style='display:flex; flex-direction:column; gap:12px;'>
+            <div style='display:flex; align-items:center; gap:10px;'>
+                <div style='width:30px; height:30px; border-radius:50%;
+                background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);
+                display:flex; align-items:center; justify-content:center;
+                font-size:0.8rem; flex-shrink:0;'>📺</div>
+                <div>
+                    <div style='color:rgba(255,255,255,0.35); font-size:0.68rem;'>Step 1</div>
+                    <div style='color:white; font-size:0.82rem; font-weight:500;'>Paste a YouTube URL</div>
+                </div>
+            </div>
+            <div style='display:flex; align-items:center; gap:10px;'>
+                <div style='width:30px; height:30px; border-radius:50%;
+                background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);
+                display:flex; align-items:center; justify-content:center;
+                font-size:0.8rem; flex-shrink:0;'>⚡</div>
+                <div>
+                    <div style='color:rgba(255,255,255,0.35); font-size:0.68rem;'>Step 2</div>
+                    <div style='color:white; font-size:0.82rem; font-weight:500;'>We grab subtitles</div>
+                </div>
+            </div>
+            <div style='display:flex; align-items:center; gap:10px;'>
+                <div style='width:30px; height:30px; border-radius:50%;
+                background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);
+                display:flex; align-items:center; justify-content:center;
+                font-size:0.8rem; flex-shrink:0;'>💬</div>
+                <div>
+                    <div style='color:rgba(255,255,255,0.35); font-size:0.68rem;'>Step 3</div>
+                    <div style='color:white; font-size:0.82rem; font-weight:500;'>Ask anything!</div>
+                </div>
+            </div>
+        </div>
+        <hr style='border-color:rgba(56,189,248,0.2); margin:16px 0 8px 0;'>
+        <p style='color:rgba(255,255,255,0.2); font-size:0.72rem; text-align:center;'>
+        Powered by FAISS · Groq · Streamlit</p>
+    </div>
+    """, unsafe_allow_html=True)
 
+# ── URL input ──────────────────────────────────────────
 url = st.text_input("🔗 Paste YouTube URL here:")
 
 if "messages" not in st.session_state:
@@ -255,7 +232,7 @@ if url and api_key:
                 transcript = get_transcript(url, video_id)
 
             if not transcript:
-                st.error("❌ Could not extract captions or transcribe this video.")
+                st.error("❌ Could not extract captions for this video. Try another!")
                 st.stop()
 
             with st.spinner("🧠 Building knowledge base..."):
@@ -268,7 +245,7 @@ if url and api_key:
                 st.session_state.chunks = chunks
                 st.session_state.index = index
 
-            st.success("✅ Video ready. Ask anything about it.")
+            st.success("✅ Video ready. Ask anything about it!")
 
         with st.expander("📄 See full transcript"):
             st.write(st.session_state.transcript)
@@ -276,6 +253,7 @@ if url and api_key:
 elif url and not api_key:
     st.warning("⚠️ API key not configured.")
 
+# ── Suggested questions ────────────────────────────────
 if "index" in st.session_state and len(st.session_state.messages) == 0:
     st.markdown("### 💡 Try asking:")
     col1, col2, col3 = st.columns(3)
@@ -289,16 +267,19 @@ if "index" in st.session_state and len(st.session_state.messages) == 0:
         if st.button("📝 Give me a summary"):
             st.session_state.starter = "Give me a summary"
 
+# ── Display messages ───────────────────────────────────
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
+# ── Chat input ─────────────────────────────────────────
 question = st.chat_input("Ask anything about the video...")
 
 if "starter" in st.session_state:
     question = st.session_state.starter
     del st.session_state.starter
 
+# ── Answer ─────────────────────────────────────────────
 if question and "index" in st.session_state and client:
     with st.chat_message("user"):
         st.write(question)
@@ -306,8 +287,7 @@ if question and "index" in st.session_state and client:
 
     context = retrieve(question, st.session_state.index, st.session_state.chunks)
 
-    system_prompt = f"""
-You answer questions about a YouTube video transcript.
+    system_prompt = f"""You answer questions about a YouTube video transcript.
 Use only the provided transcript context.
 If the answer is not in the transcript, say it is not covered.
 Be specific, clear, and concise.
@@ -315,7 +295,6 @@ Be specific, clear, and concise.
 Transcript context:
 {context}
 """
-
     messages = [{"role": "system", "content": system_prompt}]
     for msg in st.session_state.messages[:-1]:
         messages.append(msg)
@@ -332,7 +311,7 @@ Transcript context:
                 )
                 reply = response.choices[0].message.content
             except Exception as e:
-                reply = f"Sorry, I hit an error while generating the answer: {e}"
+                reply = f"Sorry, I hit an error: {e}"
             st.write(reply)
 
     st.session_state.messages.append({"role": "assistant", "content": reply})
