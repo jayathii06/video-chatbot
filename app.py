@@ -98,17 +98,45 @@ def get_transcript(video_url, video_id):
     if cache_key in st.session_state:
         return st.session_state[cache_key]
 
-    # Method 1 — youtube-transcript-api
+    # Method 1 — yt-dlp with SSL fix
     try:
-        ytt = YouTubeTranscriptApi()
-        transcript_list = ytt.list(video_id)
-        transcript = transcript_list.find_transcript(
-            ['en', 'en-US', 'en-GB', 'hi', 'te', 'ta', 'kn', 'ml']
-        ).fetch()
-        text = " ".join(entry.text for entry in transcript)
-        if text.strip():
-            st.session_state[cache_key] = text
-            return text
+        import requests
+        ydl_opts = {
+            "skip_download": True,
+            "quiet": True,
+            "no_warnings": True,
+            "nocheckcertificate": True,
+            "legacy_server_connect": True,
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video_url, download=False)
+            auto_caps = info.get("automatic_captions", {})
+            subtitles = info.get("subtitles", {})
+
+            for lang_group in [subtitles, auto_caps]:
+                for lang in ["en", "en-US", "en-GB", "hi", "te", "ta"]:
+                    tracks = lang_group.get(lang, [])
+                    for track in tracks:
+                        if track.get("ext") == "vtt" and track.get("url"):
+                            r = requests.get(track["url"], verify=False, timeout=20)
+                            if r.status_code == 200:
+                                lines = r.text.splitlines()
+                                text_lines = []
+                                for line in lines:
+                                    line = line.strip()
+                                    if not line or "-->" in line or line.startswith("WEBVTT") or line.isdigit():
+                                        continue
+                                    line = re.sub(r"<[^>]+>", "", line)
+                                    if line:
+                                        text_lines.append(line)
+                                deduped = []
+                                for line in text_lines:
+                                    if not deduped or line != deduped[-1]:
+                                        deduped.append(line)
+                                text = " ".join(deduped)
+                                if text.strip():
+                                    st.session_state[cache_key] = text
+                                    return text
     except Exception as e:
         st.info(f"⚡ Caption error: {e}")
 
