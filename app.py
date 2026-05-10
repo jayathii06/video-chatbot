@@ -41,7 +41,7 @@ def load_embedder():
 
 embedder = load_embedder()
 
-api_key = st.secrets.get("GROQ_API_KEY", "")
+api_key = os.secrets.get("GROQ_API_KEY", "")
 client = Groq(api_key=api_key) if api_key else None
 
 def extract_video_id(url):
