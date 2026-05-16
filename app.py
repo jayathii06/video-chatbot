@@ -1,12 +1,6 @@
 """
-app.py
-Streamlit UI — wiring only.  No business logic lives here.
-
-Delegates to:
-  config.py      → env validation & shared clients
-  transcriber.py → YouTube caption / Whisper extraction
-  retriever.py   → chunking, FAISS indexing, context retrieval
-  chatbot.py     → Groq LLM prompt building and response
+app.py — Streamlit UI wiring only.
+Delegates to config.py, transcriber.py, retriever.py, chatbot.py
 """
 
 import logging
@@ -17,184 +11,198 @@ from transcriber import extract_video_id, get_transcript
 from retriever import chunk_transcript, build_vector_index, retrieve_context
 from chatbot import get_answer
 
-# ── Logging ────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
 
-# ── Page config ────────────────────────────────────────────────────────────
-st.set_page_config(page_title="VideoMind", page_icon="🎥", layout="centered")
+st.set_page_config(page_title="VideoMind", page_icon="🎥", layout="wide")
 
-# ── Load CSS ───────────────────────────────────────────────────────────────
 def _load_css() -> None:
     with open("style.css", "r", encoding="utf-8") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 _load_css()
 
-# ── Config (cached so it only runs once per session) ───────────────────────
 @st.cache_resource
 def _get_config():
     return load_config()
 
 config = _get_config()
 
-# ── Header ─────────────────────────────────────────────────────────────────
-st.markdown("""
-<div style='padding:3rem 0 2rem 0; display:flex; align-items:center; gap:1.0rem;'>
-  <svg width="90" height="90" viewBox="0 0 80 90" style="flex-shrink:0; margin-top:25px;">
-    <path d="M16 10 L40 58 L64 10" fill="none" stroke="rgba(255,255,255,0.88)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M26 10 L40 42 L54 10" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="40" cy="58" r="4" fill="rgba(255,255,255,0.88)"/>
-  </svg>
-  <div>
-    <h1 style='font-family:Lora,Georgia,serif; font-size:2.4rem; font-weight:400;
-    color:rgba(255,255,255,0.92); margin:0 0 0.3rem 0; line-height:1.1;'>VideoMind</h1>
-    <p style='color:rgba(255,255,255,0.38); font-size:0.88rem; margin:0; font-weight:300;
-    letter-spacing:0.03em;'>Ask anything about any YouTube video</p>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-# ── Sidebar ────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("""
-    <div style='padding:0.5rem 0;'>
-        <h3 style='color:white; font-weight:600;'>⚙️ Settings</h3>
-        <hr style='border-color:rgba(56,189,248,0.2); margin:12px 0;'>
-        <p style='color:rgba(255,255,255,0.35); font-size:0.7rem;
-        text-transform:uppercase; letter-spacing:0.1em; font-weight:600;
-        margin-bottom:12px;'>HOW IT WORKS</p>
-        <div style='display:flex; flex-direction:column; gap:12px;'>
-            <div style='display:flex; align-items:center; gap:10px;'>
-                <div style='width:30px; height:30px; border-radius:50%;
-                background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);
-                display:flex; align-items:center; justify-content:center;
-                font-size:0.8rem; flex-shrink:0;'>📺</div>
-                <div>
-                    <div style='color:rgba(255,255,255,0.35); font-size:0.68rem;'>Step 1</div>
-                    <div style='color:white; font-size:0.82rem; font-weight:500;'>Paste a YouTube URL</div>
-                </div>
-            </div>
-            <div style='display:flex; align-items:center; gap:10px;'>
-                <div style='width:30px; height:30px; border-radius:50%;
-                background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);
-                display:flex; align-items:center; justify-content:center;
-                font-size:0.8rem; flex-shrink:0;'>⚡</div>
-                <div>
-                    <div style='color:rgba(255,255,255,0.35); font-size:0.68rem;'>Step 2</div>
-                    <div style='color:white; font-size:0.82rem; font-weight:500;'>We grab subtitles</div>
-                </div>
-            </div>
-            <div style='display:flex; align-items:center; gap:10px;'>
-                <div style='width:30px; height:30px; border-radius:50%;
-                background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3);
-                display:flex; align-items:center; justify-content:center;
-                font-size:0.8rem; flex-shrink:0;'>💬</div>
-                <div>
-                    <div style='color:rgba(255,255,255,0.35); font-size:0.68rem;'>Step 3</div>
-                    <div style='color:white; font-size:0.82rem; font-weight:500;'>Ask anything!</div>
-                </div>
-            </div>
-        </div>
-        <hr style='border-color:rgba(56,189,248,0.2); margin:16px 0 8px 0;'>
-        <p style='color:rgba(255,255,255,0.2); font-size:0.72rem; text-align:center;'>
-        Powered by FAISS · Groq · Streamlit</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# ── Session state defaults ─────────────────────────────────────────────────
-for key in ("messages", "video_url", "transcript", "vector_index"):
+# ── Session state ──────────────────────────────────────────────────────────
+for key in ("messages", "video_url", "transcript", "vector_index", "video_id"):
     if key not in st.session_state:
         st.session_state[key] = None if key != "messages" else []
 
-# ── URL input ──────────────────────────────────────────────────────────────
-url = st.text_input("🔗 Paste YouTube URL here:")
+# ── Two-column split layout ────────────────────────────────────────────────
+left, right = st.columns([1, 1.6], gap="small")
 
-if url:
-    video_id = extract_video_id(url)
+# ══════════════════════════════════════════════════════════════════════════
+# LEFT PANEL
+# ══════════════════════════════════════════════════════════════════════════
+with left:
+    # Logo
+    st.markdown("""
+    <div style='display:flex;align-items:center;gap:12px;padding:0.5rem 0 2rem 0;'>
+        <div style='width:38px;height:38px;background:rgba(255,255,255,0.05);
+        border:1px solid rgba(255,255,255,0.10);border-radius:10px;
+        display:flex;align-items:center;justify-content:center;flex-shrink:0;'>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <polygon points="5,3 19,12 5,21" fill="rgba(255,255,255,0.80)"/>
+            </svg>
+        </div>
+        <div>
+            <div style='font-size:1rem;font-weight:500;color:rgba(255,255,255,0.88);
+            letter-spacing:-0.01em;font-family:Lora,Georgia,serif;'>VideoMind</div>
+            <div style='font-size:0.68rem;color:rgba(255,255,255,0.30);'>
+            ask anything about videos</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    if not video_id:
-        st.error("❌ Invalid YouTube URL. Please check it and try again.")
-        st.stop()
+    # URL input
+    st.markdown("<div class='input-label'>YouTube URL</div>", unsafe_allow_html=True)
+    url = st.text_input("", placeholder="https://youtube.com/watch?v=...",
+                        key="url_input", label_visibility="collapsed")
 
-    # Show thumbnail immediately
-    st.image(f"https://img.youtube.com/vi/{video_id}/0.jpg", use_container_width=True)
+    if url:
+        video_id = extract_video_id(url)
 
-    # If it's a new URL, clear state and re-process
-    if st.session_state.get("video_url") != url:
-        st.session_state.messages = []
-        st.session_state.video_url = url
-        st.session_state.transcript = None
-        st.session_state.vector_index = None
+        if not video_id:
+            st.error("Invalid URL.")
+        else:
+            # FIX 1: Video card — removed raw ID line, fixed border-radius
+            thumbnail = f"https://img.youtube.com/vi/{video_id}/mqdefault.jpg"
+            st.markdown(f"""
+            <div class='video-card'>
+                <img src='{thumbnail}' style='width:100%;height:136px;
+                object-fit:cover;border-radius:10px 10px 0 0;display:block;'/>
+                <div style='padding:12px 14px;'>
+                    <div style='font-size:0.80rem;font-weight:500;
+                    color:rgba(255,255,255,0.82);margin-bottom:6px;'>
+                    YouTube Video</div>
+                    <span class='status-pill'>🎬 Ready to analyse</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-        with st.spinner("⚡ Extracting transcript..."):
-            try:
-                transcript, method = get_transcript(url, config.groq_client)
-            except ValueError as exc:
-                st.error(f"⚠️ {exc}")
-                st.stop()
+            # Process new URL
+            if st.session_state.get("video_url") != url:
+                st.session_state.messages = []
+                st.session_state.video_url = url
+                st.session_state.video_id = video_id
+                st.session_state.transcript = None
+                st.session_state.vector_index = None
 
-        if not transcript:
-            st.error("❌ Could not extract captions for this video. Try another!")
-            st.stop()
+                with st.spinner("Extracting transcript..."):
+                    try:
+                        transcript, method = get_transcript(url, config.groq_client)
+                    except ValueError as exc:
+                        st.error(f"{exc}")
+                        st.stop()
 
-        method_label = "📝 Captions" if method == "captions" else "🎙️ Whisper"
-        st.session_state.transcript = transcript
+                if not transcript:
+                    st.error("Could not extract captions. Try another video.")
+                    st.stop()
 
-        with st.spinner("🧠 Building knowledge base..."):
-            chunks = chunk_transcript(transcript)
-            if not chunks:
-                st.error("❌ Transcript was too short or empty.")
-                st.stop()
-            st.session_state.vector_index = build_vector_index(chunks, config.embedder)
+                st.session_state.transcript = transcript
 
-        st.success(f"✅ Ready ({method_label}, {len(chunks)} chunks). Ask anything!")
+                with st.spinner("Building knowledge base..."):
+                    chunks = chunk_transcript(transcript)
+                    if not chunks:
+                        st.error("Transcript too short.")
+                        st.stop()
+                    st.session_state.vector_index = build_vector_index(
+                        chunks, config.embedder)
 
-    # Transcript expander
-    if st.session_state.transcript:
-        with st.expander("📄 See full transcript"):
-            st.write(st.session_state.transcript)
+                method_label = "Captions" if method == "captions" else "Whisper"
+                st.success(f"Ready · {method_label} · {len(chunks)} chunks")
 
-# ── Suggested starter questions ────────────────────────────────────────────
-if st.session_state.vector_index and not st.session_state.messages:
-    st.markdown("### 💡 Try asking:")
-    col1, col2, col3 = st.columns(3)
-    starters = {
-        col1: ("📌 What is this video about?", "What is this video about?"),
-        col2: ("🔑 What are the key points?", "What are the key points?"),
-        col3: ("📝 Give me a summary", "Give me a summary"),
-    }
-    for col, (label, question) in starters.items():
-        with col:
-            if st.button(label):
+            # Transcript expander
+            if st.session_state.transcript:
+                with st.expander("📄 Full transcript"):
+                    st.write(st.session_state.transcript)
+
+    # FIX 2: Quick question pills — left-aligned text, more spacing
+    if st.session_state.vector_index:
+        st.markdown("<div class='pills-label'>Quick questions</div>",
+                    unsafe_allow_html=True)
+        pills = [
+            ("✦  What is this video about?", "What is this video about?"),
+            ("✦  Give me the key points",    "What are the key points?"),
+            ("✦  Summarise for me",           "Give me a summary"),
+        ]
+        for label, question in pills:
+            if st.button(label, use_container_width=True, key=f"pill_{question}"):
                 st.session_state["_starter"] = question
 
-# ── Chat history display ───────────────────────────────────────────────────
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.write(msg["content"])
+    # FIX 3: Footer lowercase
+    st.markdown("""
+    <div style='position:fixed;bottom:1.4rem;left:1.5rem;
+    font-size:0.62rem;color:rgba(255,255,255,0.10);letter-spacing:0.05em;'>
+    faiss · groq · streamlit
+    </div>
+    """, unsafe_allow_html=True)
 
-# ── Chat input + answer ────────────────────────────────────────────────────
-question = st.chat_input("Ask anything about the video...")
+# ══════════════════════════════════════════════════════════════════════════
+# RIGHT PANEL — Chat
+# ══════════════════════════════════════════════════════════════════════════
+with right:
+    st.markdown("""
+    <div class='chat-header'>
+        <div class='chat-dot'></div>
+        <span class='chat-header-txt'>Chat with this video</span>
+    </div>
+    """, unsafe_allow_html=True)
 
-# Allow starter buttons to inject a question
-if "_starter" in st.session_state:
-    question = st.session_state.pop("_starter")
-
-if question:
+    # Empty state
     if not st.session_state.vector_index:
-        st.warning("⚠️ Please paste a YouTube URL first!")
-        st.stop()
+        st.markdown("""
+        <div class='empty-state'>
+            <div class='empty-icon'>🎬</div>
+            <div class='empty-title'>Paste a YouTube URL to start</div>
+            <div class='empty-sub'>I'll analyse the video and answer anything you ask</div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        # FIX 4: Chat body — scrollable, padded, max-width on bubbles
+        st.markdown("<div class='chat-body'>", unsafe_allow_html=True)
+        for msg in st.session_state.messages:
+            if msg["role"] == "user":
+                st.markdown(f"""
+                <div class='bubble-row-user'>
+                    <div class='bubble-user'>{msg["content"]}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div class='bubble-row-ai'>
+                    <div class='ai-avatar'>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="4" fill="rgba(255,255,255,0.50)"/>
+                            <circle cx="12" cy="12" r="9"
+                            stroke="rgba(255,255,255,0.20)" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    <div class='bubble-ai'>{msg["content"]}</div>
+                </div>
+                """, unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    with st.chat_message("user"):
-        st.write(question)
-    st.session_state.messages.append({"role": "user", "content": question})
+    # Chat input
+    question = st.chat_input("Ask anything about the video...")
 
-    context = retrieve_context(question, st.session_state.vector_index)
+    if "_starter" in st.session_state:
+        question = st.session_state.pop("_starter")
 
-    with st.chat_message("assistant"):
+    if question:
+        if not st.session_state.vector_index:
+            st.warning("Paste a YouTube URL first!")
+            st.stop()
+
+        st.session_state.messages.append({"role": "user", "content": question})
+        context = retrieve_context(question, st.session_state.vector_index)
+
         with st.spinner("Thinking..."):
             try:
-                # Pass history excluding the message we just appended
                 reply = get_answer(
                     question=question,
                     context=context,
@@ -203,6 +211,6 @@ if question:
                 )
             except Exception as exc:
                 reply = f"Sorry, I hit an error: {exc}"
-        st.write(reply)
 
-    st.session_state.messages.append({"role": "assistant", "content": reply})
+        st.session_state.messages.append({"role": "assistant", "content": reply})
+        st.rerun()

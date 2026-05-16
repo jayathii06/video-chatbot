@@ -1,247 +1,270 @@
 @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500&family=Inter:wght@300;400;500&display=swap');
 
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-}
-
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+#MainMenu, footer, header { visibility: hidden; }
 
 :root {
-    --bg: #111110;
-    --panel: #1a1a18;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(255, 255, 255, 0.15);
-    --text: rgba(255, 255, 255, 0.90);
-    --muted: rgba(255, 255, 255, 0.45);
-    --radius: 14px;
+    --bg: #0f0f0e;
+    --panel: #161614;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.14);
+    --text: rgba(255,255,255,0.88);
+    --muted: rgba(255,255,255,0.38);
+    --radius: 12px;
 }
 
-.stApp {
-    background: var(--bg);
-    color: var(--text);
-}
+.stApp { background: var(--bg) !important; color: var(--text); }
 
 .block-container {
-    padding-top: 5rem;
-    max-width: 760px;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-    margin: 0 auto;
+    padding: 2rem 2.5rem !important;
+    max-width: 100% !important;
 }
 
-[data-testid="stSidebar"] {
-    background: #0e0e0d !important;
+/* ── Left panel ── */
+[data-testid="stColumn"]:first-child {
+    background: #0c0c0b !important;
     border-right: 1px solid var(--border) !important;
+    min-height: calc(100vh - 4rem);
+    padding: 1.5rem 1.8rem !important;
 }
 
-[data-testid="stSidebar"] * {
-    color: var(--muted) !important;
+[data-testid="stColumn"]:last-child {
+    padding: 0 !important;
 }
 
-h1 {
-    font-family: 'Lora', Georgia, serif !important;
-    font-size: 2.6rem !important;
-    font-weight: 400 !important;
-    color: var(--text) !important;
-    letter-spacing: -0.01em;
-    line-height: 1.2;
+/* ── Typography ── */
+h1 { font-family: 'Lora', Georgia, serif !important; color: var(--text) !important; }
+p, li, label, .stMarkdown { color: var(--muted) !important; }
+
+/* ── Input label ── */
+.input-label {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.28);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
 }
 
-h2, h3, h4 {
-    font-family: 'Inter', sans-serif !important;
-    color: var(--text) !important;
-    font-weight: 500 !important;
-    letter-spacing: -0.01em;
-}
-
-p, li, label, .stMarkdown, .stCaption {
-    color: var(--muted) !important;
-}
-
+/* ── URL input ── */
 .stTextInput input {
-    border-radius: var(--radius) !important;
+    background: var(--panel) !important;
     border: 1px solid var(--border) !important;
-    background-color: var(--panel) !important;
+    border-radius: 10px !important;
     color: var(--text) !important;
-    padding: 1rem 1.2rem !important;
-    font-size: 0.95rem !important;
+    padding: 0.7rem 1rem !important;
+    font-size: 0.82rem !important;
     box-shadow: none !important;
-    transition: border-color 0.15s ease !important;
+    transition: border-color 0.2s ease !important;
 }
-
-.stTextInput input::placeholder {
-    color: var(--muted) !important;
-}
-
+.stTextInput input::placeholder { color: rgba(255,255,255,0.20) !important; }
 .stTextInput input:focus {
     border-color: var(--border-hover) !important;
     box-shadow: none !important;
     outline: none !important;
 }
 
-.stButton button {
-    border-radius: 999px !important;
-    border: 1px solid var(--border) !important;
-    background: transparent !important;
-    color: var(--muted) !important;
-    font-size: 0.82rem !important;
-    font-weight: 400 !important;
-    padding: 0.4rem 1rem !important;
-    transition: border-color 0.15s ease, color 0.15s ease !important;
-    box-shadow: none !important;
+/* ── Video card — FIX: consistent border-radius, no debug info ── */
+.video-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin: 1.2rem 0;
 }
 
+.status-pill {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.35);
+    display: inline-block;
+}
+
+/* ── Pills label ── */
+.pills-label {
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.22);
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    margin: 1.4rem 0 0.6rem 0;
+}
+
+/* ── FIX: pill buttons left-aligned text, better spacing ── */
+.stButton button {
+    background: var(--panel) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    color: rgba(255,255,255,0.45) !important;
+    font-size: 0.78rem !important;
+    font-weight: 400 !important;
+    padding: 0.60rem 1rem !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+    transition: all 0.15s ease !important;
+    box-shadow: none !important;
+    margin-bottom: 6px !important;
+}
 .stButton button:hover {
     border-color: var(--border-hover) !important;
-    color: var(--text) !important;
+    color: rgba(255,255,255,0.75) !important;
+    background: rgba(255,255,255,0.05) !important;
     transform: none !important;
-    background: rgba(255,255,255,0.04) !important;
 }
 
-.stChatInput textarea {
-    background-color: var(--panel) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius) !important;
-    color: var(--text) !important;
-    font-size: 0.95rem !important;
-    min-height: 56px !important;
-    line-height: 1.5 !important;
-    box-shadow: none !important;
+/* ── Chat header ── */
+.chat-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 1.2rem 1.8rem;
+    border-bottom: 1px solid var(--border);
+}
+.chat-dot {
+    width: 7px; height: 7px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+}
+.chat-header-txt {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 0.03em;
 }
 
-.stChatInput textarea::placeholder {
-    color: var(--muted) !important;
+/* ── Empty state ── */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 65vh;
+    gap: 10px;
+    text-align: center;
+}
+.empty-icon { font-size: 2rem; opacity: 0.25; }
+.empty-title {
+    font-size: 0.92rem;
+    color: rgba(255,255,255,0.30);
+    font-family: 'Lora', Georgia, serif;
+}
+.empty-sub { font-size: 0.75rem; color: rgba(255,255,255,0.15); }
+
+/* ── FIX: Chat body — top padding, scrollable ── */
+.chat-body {
+    padding: 1.2rem 0 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
 }
 
-.stChatInput textarea:focus {
-    border-color: var(--border-hover) !important;
+/* ── FIX: Bubbles — capped width, left padding ── */
+.bubble-row-user {
+    display: flex;
+    justify-content: flex-end;
+    padding: 4px 1.8rem 4px 4rem;
+}
+.bubble-row-ai {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 4rem 4px 1.8rem;
+}
+.bubble-user {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px 4px 14px 14px;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.82);
+    max-width: 72%;
+    line-height: 1.55;
+}
+.bubble-ai {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px 14px 14px 14px;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.65);
+    max-width: 78%;
+    line-height: 1.55;
+}
+.ai-avatar {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
-.stChatInput button {
-    border-radius: 50% !important;
-    background: rgba(255,255,255,0.10) !important;
-    color: var(--text) !important;
-    border: 1px solid var(--border) !important;
-}
-
-.stChatInput button:hover {
-    background: rgba(255,255,255,0.18) !important;
-}
-
-[data-testid="stBottom"] {
-    background-color: rgba(17, 17, 16, 0.95) !important;
-    border-top: 1px solid var(--border) !important;
-    backdrop-filter: blur(12px);
-}
-
-[data-testid="stChatInput"] {
-    background-color: transparent !important;
-}
-
-.stChatMessage {
-    background: rgba(255, 255, 255, 0.03) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius) !important;
-    padding: 0.9rem 1.1rem !important;
-}
-
-.stChatMessage [data-testid="stMarkdownContainer"] p,
-.stChatMessage [data-testid="stMarkdownContainer"] li {
-    color: rgba(255, 255, 255, 0.82) !important;
-}
-
-.stSuccess {
-    background: rgba(16, 185, 129, 0.07) !important;
-    border: 1px solid rgba(16, 185, 129, 0.18) !important;
-    border-radius: 10px !important;
-}
-
-.stWarning {
-    background: rgba(245, 158, 11, 0.07) !important;
-    border: 1px solid rgba(245, 158, 11, 0.18) !important;
-    border-radius: 10px !important;
-}
-
-.stError {
-    background: rgba(239, 68, 68, 0.07) !important;
-    border: 1px solid rgba(239, 68, 68, 0.18) !important;
-    border-radius: 10px !important;
-}
-
-.stExpander {
-    background: rgba(255, 255, 255, 0.02) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
-}
-
-hr {
-    border-color: var(--border) !important;
-}
-
-img {
-    border-radius: 10px;
-    opacity: 0.92;
-}
-
-/* ── Kill Streamlit's default blue focus outlines everywhere ── */
-*:focus {
-    outline: none !important;
-    box-shadow: none !important;
-}
-
-*:focus-visible {
-    outline: none !important;
-    box-shadow: none !important;
-}
-
-/* ── Bottom bar background (the blue tint) ── */
-[data-testid="stBottom"] {
-    background-color: var(--bg) !important;
-    border-top: 1px solid var(--border) !important;
-    backdrop-filter: none !important;
-}
-
-/* ── Chat input container blue border on focus ── */
-[data-testid="stChatInput"]:focus-within,
-[data-testid="stChatInput"] {
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-}
-
-.stChatInput > div {
-    border: none !important;
-    box-shadow: none !important;
-}
-
-.stChatInput textarea:focus {
-    border-color: var(--border-hover) !important;
-    box-shadow: none !important;
-    outline: none !important;
-}
-
-/* ── Nuclear option: kill ALL blue tints in bottom area ── */
+/* ── Chat input ── */
+[data-testid="stBottom"],
 [data-testid="stBottom"] > div,
-[data-testid="stBottom"] > div > div,
-[data-testid="stBottomBlockContainer"],
-[data-testid="stBottomBlockContainer"] > div,
-section[data-testid="stBottom"],
-.stBottom, .stBottom > div {
-    background-color: var(--bg) !important;
-    background: var(--bg) !important;
+[data-testid="stBottomBlockContainer"] {
+    background: #0f0f0e !important;
     border-top: 1px solid var(--border) !important;
     box-shadow: none !important;
 }
-
-/* ── Also kill any blue on the outer app wrapper ── */
-.stApp > div:last-child,
-.stApp > section:last-child {
-    background-color: var(--bg) !important;
+[data-testid="stChatInput"] { background: transparent !important; }
+.stChatInput textarea {
+    background: var(--panel) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    color: var(--text) !important;
+    font-size: 0.85rem !important;
+    box-shadow: none !important;
 }
-[data-testid="stBottom"] {
-    border-top: none !important;
+.stChatInput textarea::placeholder { color: rgba(255,255,255,0.20) !important; }
+.stChatInput textarea:focus {
+    border-color: var(--border-hover) !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+.stChatInput button {
+    border-radius: 8px !important;
+    background: rgba(255,255,255,0.08) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text) !important;
+}
+.stChatInput button:hover { background: rgba(255,255,255,0.14) !important; }
+
+/* ── Alerts ── */
+.stSuccess {
+    background: rgba(16,185,129,0.07) !important;
+    border: 1px solid rgba(16,185,129,0.15) !important;
+    border-radius: 8px !important;
+    font-size: 0.80rem !important;
+}
+.stError {
+    background: rgba(239,68,68,0.07) !important;
+    border: 1px solid rgba(239,68,68,0.15) !important;
+    border-radius: 8px !important;
+}
+.stWarning {
+    background: rgba(245,158,11,0.07) !important;
+    border: 1px solid rgba(245,158,11,0.15) !important;
+    border-radius: 8px !important;
 }
 
+/* ── Expander ── */
+.stExpander {
+    background: rgba(255,255,255,0.02) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    margin-top: 0.8rem !important;
+}
 
+/* ── Kill all blue focus rings ── */
+*:focus, *:focus-visible { outline: none !important; box-shadow: none !important; }
+[data-testid="stChatInput"]:focus-within { border: none !important; box-shadow: none !important; }
+.stChatInput > div { border: none !important; box-shadow: none !important; }
+
+hr { border-color: var(--border) !important; }
+img { border-radius: 8px; }
