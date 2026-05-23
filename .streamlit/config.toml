@@ -1,5 +1,8 @@
 [theme]
-backgroundColor = "#181c21"
-secondaryBackgroundColor = "#181c21"
-primaryColor = "#ffffff"
-textColor = "#ffffff"
+backgroundColor = "#F8FAFC"
+secondaryBackgroundColor = "#F1F5F9"
+primaryColor = "#1E40AF"
+textColor = "#0F172A"
+
+[server]
+fileWatcherType = "none"

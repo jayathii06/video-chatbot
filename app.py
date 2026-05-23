@@ -62,6 +62,30 @@ with left:
     st.markdown("<div class='input-label'>YouTube URL</div>", unsafe_allow_html=True)
     url = st.text_input("", placeholder="https://youtube.com/watch?v=...",
                         key="url_input", label_visibility="collapsed")
+    
+    if not url:
+        st.markdown("""
+    <div class='hint-block'>
+        <div class='hint-block-title'>How it works</div>
+
+        <div class='hint-item'>
+            <div class='hint-dot'></div>
+            <div class='hint-text'>Paste any YouTube URL above</div>
+        </div>
+
+        <div class='hint-item'>
+            <div class='hint-dot'></div>
+            <div class='hint-text'>We extract the transcript automatically</div>
+        </div>
+
+        <div class='hint-item'>
+            <div class='hint-dot'></div>
+            <div class='hint-text'>Ask anything — summaries, key points, quotes</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    
 
     if url:
         video_id = extract_video_id(url)
