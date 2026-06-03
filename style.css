@@ -334,7 +334,6 @@ p, li, label, .stMarkdown { color: var(--muted) !important; }
 ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
-/* ── Kill focus rings ── */
 *:focus, *:focus-visible { outline: none !important; }
 [data-testid="stChatInput"]:focus-within { border: none !important; box-shadow: none !important; }
 .stChatInput > div { border: none !important; box-shadow: none !important; }
@@ -342,7 +341,6 @@ p, li, label, .stMarkdown { color: var(--muted) !important; }
 hr { border-color: #E2E8F0 !important; }
 img { border-radius: 8px; }
 
-/* ── Footer ── */
 .footer-text {
     font-size: 0.65rem;
     color: #CBD5E1;
