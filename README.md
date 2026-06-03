@@ -1,4 +1,4 @@
-# VideoMind - AI Video Q&A
+# VideoMind - AI Chatbot Q&A
 
 Ask questions about any YouTube video in natural language. VideoMind extracts the transcript, builds a semantic search index, and uses an LLM to answer questions grounded in the video content.
 
