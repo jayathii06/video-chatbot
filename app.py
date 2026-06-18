@@ -50,30 +50,44 @@ with left:
             </svg>
         </div>
         <div>
-            <div style='font-size:1rem;font-weight:500;color:#1E293B;
-            letter-spacing:-0.01em;font-family:Lora,Georgia,serif;'>VideoMind</div>
-            <div style='font-size:0.68rem;color:#64748B;'>
-ask anything about the video
+            <div style='font-size:2.1rem;font-weight:500;color:#1E293B;
+            letter-spacing:-0.01em;font-family:Lora,Georgia,serif;'> ▶️  VideoMind</div>
+            <div style='font-size:1.1rem;color:#64748B;'>
+Chat with any YouTube video
 </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
     # URL input
-    st.markdown("<div class='input-label'>YouTube URL</div>", unsafe_allow_html=True)
+    st.markdown("<div class='input-label'> YOUTUBE URL </div>", unsafe_allow_html=True)
     url = st.text_input("", placeholder="https://youtube.com/watch?v=...",
                         key="url_input", label_visibility="collapsed")
     
-    if not url:
-       st.info("""
-How it works
+ 
+    st.markdown("""
+<div style='margin-top:20px;padding:16px;background:white;
+border:1px solid #E2E8F0;border-radius:10px;'>
 
-• Paste any YouTube URL above
+<div style='font-size:0.75rem;font-weight:600;
+color:#64748B;margin-bottom:12px;letter-spacing:0.05em;'>
+POWERED BY
+</div>
 
-• We extract the transcript automatically
+<div style='display:flex;gap:8px;flex-wrap:nowrap;'>
 
-• Ask anything — summaries, key points, quotes
-""")
+<span style='min-width:80px;text-align:center;background:#E8F0FE;color:#1a56db;font-size:0.85rem;font-weight:600;padding:7px 14px;border-radius:20px;'>FAISS</span>
+
+<span style='min-width:80px;text-align:center;background:#E8F0FE;color:#1a56db;font-size:0.85rem;font-weight:600;padding:7px 14px;border-radius:20px;'>RAG</span>
+
+<span style='min-width:80px;text-align:center;background:#E8F0FE;color:#1a56db;font-size:0.85rem;font-weight:600;padding:7px 14px;border-radius:20px;'>Groq</span>
+
+<span style='min-width:80px;text-align:center;background:#E8F0FE;color:#1a56db;font-size:0.85rem;font-weight:600;padding:7px 14px;border-radius:20px;'>Embeddings</span>
+
+</div>
+
+</div>
+""", unsafe_allow_html=True)
     
     
 
@@ -83,20 +97,25 @@ How it works
         if not video_id:
             st.error("Invalid URL.")
         else:
-            # FIX 1: Video card — removed raw ID line, fixed border-radius
+            
             thumbnail = f"https://img.youtube.com/vi/{video_id}/mqdefault.jpg"
+            chunk_count = len(st.session_state.vector_index.chunks) if st.session_state.vector_index else "—"
+
             st.markdown(f"""
-            <div class='video-card'>
-                <img src='{thumbnail}' style='width:100%;height:136px;
-                object-fit:cover;border-radius:10px 10px 0 0;display:block;'/>
-                <div style='padding:12px 14px;'>
-                    <div style='font-size:0.80rem;font-weight:500;
-                    color:rgba(255,255,255,0.82);margin-bottom:6px;'>
-                    YouTube Video</div>
-                    <span class='status-pill'>🎬 Ready to analyse</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+<div class='video-card'>
+    <img src='{thumbnail}' style='width:100%;height:136px;
+    object-fit:cover;border-radius:10px 10px 0 0;display:block;'/>
+    <div style='padding:12px 14px;background:white;'>
+        <div style='font-size:0.78rem;font-weight:600;color:#1E293B;
+        margin-bottom:8px;'>YouTube Video</div>
+        <div style='display:flex;align-items:center;justify-content:space-between;'>
+            <span class='status-pill'>🎬 Ready to analyse</span>
+            <span style='font-size:0.72rem;color:#64748B;'>
+            {chunk_count} chunks indexed</span>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
             # Process new URL
             if st.session_state.get("video_url") != url:
@@ -135,7 +154,7 @@ How it works
                 with st.expander("📄 Full transcript"):
                     st.write(st.session_state.transcript)
 
-    # FIX 2: Quick question pills — left-aligned text, more spacing
+    
     if st.session_state.vector_index:
         st.markdown("<div class='pills-label'>Quick questions</div>",
                     unsafe_allow_html=True)
@@ -148,7 +167,7 @@ How it works
             if st.button(label, use_container_width=True, key=f"pill_{question}"):
                 st.session_state["_starter"] = question
 
-    # FIX 3: Footer lowercase
+    
     st.markdown("""
     <div style='position:fixed;bottom:1.4rem;left:1.5rem;
     font-size:0.62rem;color:rgba(255,255,255,0.10);letter-spacing:0.05em;'>
@@ -156,14 +175,12 @@ How it works
     </div>
     """, unsafe_allow_html=True)
 
-# ══════════════════════════════════════════════════════════════════════════
-# RIGHT PANEL — Chat
-# ══════════════════════════════════════════════════════════════════════════
+
 with right:
     st.markdown("""
     <div class='chat-header'>
         <div class='chat-dot'></div>
-        <span class='chat-header-txt'>Chat with this video</span>
+        <span class='chat-header-txt'>VideoMind Assistant</span>
     </div>
     """, unsafe_allow_html=True)
 
@@ -173,7 +190,8 @@ with right:
         <div class='empty-state'>
             <div class='empty-icon'>🎬</div>
             <div class='empty-title'>Paste a YouTube URL to start</div>
-            <div class='empty-sub'>I'll analyse the video and answer anything you ask</div>
+            <div class='empty-sub'>Get summaries, key insights, explanations,
+important quotes, and answers from the video content.</div>
         </div>
         """, unsafe_allow_html=True)
     else:
@@ -202,7 +220,7 @@ with right:
         st.markdown("</div>", unsafe_allow_html=True)
 
     # Chat input
-    question = st.chat_input("Ask anything about the video...")
+    question = st.chat_input("Ask for a summary, explanation, or key insight...")
 
     if "_starter" in st.session_state:
         question = st.session_state.pop("_starter")
