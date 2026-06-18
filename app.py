@@ -50,10 +50,11 @@ with left:
             </svg>
         </div>
         <div>
-            <div style='font-size:1rem;font-weight:500;color:rgba(255,255,255,0.88);
+            <div style='font-size:1rem;font-weight:500;color:#1E293B;
             letter-spacing:-0.01em;font-family:Lora,Georgia,serif;'>VideoMind</div>
-            <div style='font-size:0.68rem;color:rgba(255,255,255,0.30);'>
-            ask anything about videos</div>
+            <div style='font-size:0.68rem;color:#64748B;'>
+ask anything about the video
+</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -64,26 +65,15 @@ with left:
                         key="url_input", label_visibility="collapsed")
     
     if not url:
-        st.markdown("""
-    <div class='hint-block'>
-        <div class='hint-block-title'>How it works</div>
+       st.info("""
+How it works
 
-        <div class='hint-item'>
-            <div class='hint-dot'></div>
-            <div class='hint-text'>Paste any YouTube URL above</div>
-        </div>
+• Paste any YouTube URL above
 
-        <div class='hint-item'>
-            <div class='hint-dot'></div>
-            <div class='hint-text'>We extract the transcript automatically</div>
-        </div>
+• We extract the transcript automatically
 
-        <div class='hint-item'>
-            <div class='hint-dot'></div>
-            <div class='hint-text'>Ask anything — summaries, key points, quotes</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+• Ask anything — summaries, key points, quotes
+""")
     
     
 
