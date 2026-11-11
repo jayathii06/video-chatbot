@@ -11,7 +11,7 @@ from groq import Groq
 logger = logging.getLogger(__name__)
 
 # ── Config ─────────────────────────────────────────────────────────────────
-model="openai/gpt-oss-20b",
+MODEL = "openai/gpt-oss-20b"
 MAX_TOKENS = 900
 TEMPERATURE = 0.2
 
